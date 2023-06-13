@@ -1,0 +1,249 @@
+public with sharing class ADHAccountStewarding_Services {
+    /*
+Created By: Ravindra Paliwal
+Created On: 03/14/2022
+Modification: Service Class for ADH_AccountStewarding__c object trigger EDA 3.1
+--------------------------------------------------------------------------*/
+    public static boolean testRunCustomException = false; // To allow us to "fake" an error for coverage 
+    
+    private static ADH_Stewarded_Account__mdt manualApprovalStatus = new ADH_Stewarded_Account__mdt(); 
+    //private static ADH_Stewarded_Account__mdt autoApprovalStatus = new ADH_Stewarded_Account__mdt();   
+    
+    static{
+        for(ADH_Stewarded_Account__mdt  data:[SELECT MasterLabel, Account_Status__c , Approval_Status__c , Extended_Status__c
+                                              FROM ADH_Stewarded_Account__mdt]){
+                                                  /*   if(data.MasterLabel.equalsIgnoreCase('Auto Stewarded')){
+autoApprovalStatus = data;
+}*/
+                                                  if(data.MasterLabel.equalsIgnoreCase('Manual Stewarded')){
+                                                      manualApprovalStatus = data;
+                                                  }
+                                              }
+    }
+    // These field names can be included in a custom label
+    private static Set<String> FIELD_NAMES { 
+        get {
+            if(FIELD_NAMES == null){
+                FIELD_NAMES = new Set<String>{
+                    'Account_ID__c',
+                        'Account_Name__c',
+                        'Account_Status__c',
+                        'Approval_Status__c',
+                        'Bookings_Status__c',
+                        'City__c',
+                        'Country__c',
+                        'Domestic_DUNS_Name__c',
+                        'Domestic_DUNS_Number__c',
+                        'DUNS_Annual_Sales__c',
+                        'DUNS_Company_Website__c',
+                        'DUNS_Confidence_Code__c',
+                        'DUNS_Domain__c',
+                        'DUNS_Employee_Count_Consolidated__c',
+                        'DUNS_Employee_Count_Site__c',
+                        'DUNS_Enriched_Date__c',
+                        'DUNS_Is_Standalone__c',
+                        'DUNS_Site_FamiliyTree_Role__c',
+                        'DUNS_Site_Operating_Status__c',
+                        'DUNS_Site_Phone__c',
+                        'Enriched_City__c',
+                        'Enriched_Country__c',
+                        'Enriched_Country_ISO__c',
+                        'Enriched_Postal_Code__c',
+                        'Enriched_State__c',
+                        'Enriched_State_ISO__c',
+                        'Enriched_Street__c',
+                        'Fax__c',
+                        'G2K_Employee_Count_Global__c',
+                        'G2K_Industry_Center__c',
+                        'G2K_Industry_Sector__c',
+                        'G2K_Lookup_Recorded_Date__c',
+                        'G2K_Status__c',
+                        'Geo_Lat__c',
+                        'Geo_Log__c',
+                        'Geo_Place_Id__c',
+                        'Geo_Type__c',
+                        'Global_DUNS_Name__c',
+                        'Global_DUNS_Number__c',
+                        'GOV_Employee_Count_Global__c',
+                        'GOV_Industry_Center__c',
+                        'GOV_Industry_Sector__c',
+                        'GOV_Lookup_Recorded_Date__c',
+                        'GOV_Status__c',
+                        'HQ_DUNS_Name__c',
+                        'HQ_DUNS_Number__c',
+                        'Industry_Center__c',
+                        'Industry_Sector__c',
+                        'Latestage_Prospect__c',
+                        'NAICS_Code__c',
+                        'NAICS_Description__c',
+                        'Org_ID__c',
+                        'Parent_DUNS_Name__c',
+                        'Parent_DUNS_Number__c',
+                        'Partner_Status__c',
+                        'Phone__c',
+                        'Postal_Code__c',
+                        'SIC_4_Digit_Code__c',
+                        'SIC_4_Digit_Description__c',
+                        'SIC_8_Digit_Code__c',
+                        'SIC_8_Digit_Description__c',
+                        'Site_DUNS_Name__c',
+                        'Site_DUNS_Number__c',
+                        'State__c',
+                        'Street__c',
+                        'Website__c',
+                        'Status_Extended__c',
+                        'DUNS_Business_Started__c',
+                        'Global_Employee_Count_Survived__c',
+                        'Survived_Industry_Center__c',
+                        'Industry_Center_from_DUNS_SIC__c',
+                        'Survived_Industry_Sector__c',
+                        'Industry_Sector_from_DUNS_SIC__c',
+                        'Site_Employee_Count_Survived__c',
+                        'Steward_Override_for_Industry_Center__c',
+                        'Steward_Override_for_Industry_Sector__c',
+                        'Steward_Override_Global_Employee_Count__c',
+                        'Steward_Override_Site_Employee_Count__c'
+                        };
+                            }
+            return FIELD_NAMES;
+        }
+        set;
+    }
+    
+    public Map<String, String> populateDefaultApprovalStatus(Trigger_Helper helper, MAP<ID, ADH_Account_Stewarding__c> triggerOldMAP, MAP<ID, ADH_Account_Stewarding__c> triggerNewMAP, 
+                                                             LIST<ADH_Account_Stewarding__c> triggerNewLIST, System.TriggerOperation operation) {
+                                                                 /*
+Created By: Ravindra Paliwal
+Created On: 04/08/2022
+Purpose: This method is to populate the default status on all the Stewarding Records
+--------------------------------------------------------------------------
+Modified By:    
+Modified On:  
+Modification: 
+*/
+                                                                 Map<String, String> errorMap = new Map<String, String>();
+                                                                 Integer nCounter = 0;
+                                                                 String industrySector;
+                                                                 try {
+                                                                     if(test.isRunningTest() && testRunCustomException){
+                                                                         Integer  i = 1/0;
+                                                                     }
+                                                                     if(operation == System.TriggerOperation.BEFORE_INSERT)
+                                                                     {
+                                                                         //Loop through updated records  //
+                                                                         for(ADH_Account_Stewarding__c adh : triggerNewLIST){
+                                                                             System.debug('Approval Status: ' + adh.Approval_Status__c);
+                                                                             adh.Approval_Status__c = 'Pending Stewarding';
+                                                                             if(!String.isBlank(industrySector) && industrySector.contains('Government')){
+                                                                                 adh.Status_Extended__c = 'GOV';
+                                                                             }
+                                                                         }
+                                                                     }
+                                                                     
+                                                                     if(operation == System.TriggerOperation.BEFORE_UPDATE)
+                                                                     {
+                                                                         //Loop through updated records  //
+                                                                         for(ADH_Account_Stewarding__c adh : triggerNewLIST){
+                                                                             industrySector = adh.Survived_Industry_Sector__c;
+                                                                             if(!String.isBlank(industrySector) && industrySector.contains('Government')){
+                                                                                 adh.Status_Extended__c = 'GOV';
+                                                                             }
+                                                                         }
+                                                                     }
+                                                                     
+                                                                 } catch (Exception e){
+                                                                     System.debug(' Errors ' + e.getStackTraceString());
+                                                                     integer nIndex = 0;
+                                                                     for (ADH_Account_Stewarding__c asRecord : triggerNewLIST){
+                                                                         errorMAP.put(string.valueOf(nIndex), e.getMessage());
+                                                                         nIndex++;
+                                                                     }
+                                                                 }// END catch...
+                                                                 return errorMap;
+                                                             }
+    
+    public Map<String, String> populateStewardedRecord(Trigger_Helper helper, MAP<ID, ADH_Account_Stewarding__c> triggerOldMAP, MAP<ID, ADH_Account_Stewarding__c> triggerNewMAP, 
+                                                       LIST<ADH_Account_Stewarding__c> triggerNewLIST, System.TriggerOperation operation) {
+                                                           /*
+Created By:Srinivas Duggi
+Created On: 03/16/2022
+Purpose: This method will copy stewarding data to Stewarded object
+--------------------------------------------------------------------------
+Modified By:    
+Modified On:  
+Modification: 
+*/
+                                                           Map<String, String> errorMap = new Map<String, String>();
+                                                           List<ADH_Account_Stewarding__c> approvedStewardingRecList = new List<ADH_Account_Stewarding__c>();
+                                                           Set<Id> setRecordsToDelete = new Set<Id>();
+                                                           List<String>approvalStatusList = new List<String>();
+                                                           
+                                                           try {
+                                                               if(test.isRunningTest() && testRunCustomException){
+                                                                   Integer  i = 1/0;
+                                                               }
+                                                               if(operation == System.TriggerOperation.AFTER_UPDATE){// Manual update - Auto approved records will be handled in After Insert trigger of ADHAccountStewarded object
+                                                                   System.debug('Operation: ' + operation);
+                                                                   approvalStatusList = string.valueOf(manualApprovalStatus.Approval_Status__c).split(',');
+                                                                   //Loop through updated records  //
+                                                                   for(ADH_Account_Stewarding__c adh : triggerNewLIST){
+                                                                       System.debug('Approval Status: ' + adh.Approval_Status__c);
+                                                                       if(adh.Approval_Status__c != null && adh.Approval_Status__c != triggerOldMap.get(adh.Id).Approval_Status__c 
+                                                                          && approvalStatusList.contains(adh.Approval_Status__c)){// 
+                                                                              approvedStewardingRecList.add(adh);
+                                                                              setRecordsToDelete.add(adh.Account_ID__c);  
+                                                                              System.debug(' Stewarding Approved Record ' + adh);// APPROVED WTH OVERRIDE
+                                                                          }
+                                                                       
+                                                                   }
+                                                                   
+                                                                   if(approvedStewardingRecList.size() > 0 ){
+                                                                       copyDataToADHStewarded(approvedStewardingRecList);// Copy fields from Stewarding object to Stewarded object
+                                                                       System.enqueueJob(new ADHAccount_Stewarding_Delete_Enqueue(setRecordsToDelete));
+                                                                   }
+                                                               }
+                                                               
+                                                           } catch (Exception e){
+                                                               System.debug(' Errors ' + e.getStackTraceString());
+                                                               integer nIndex = 0;
+                                                               for (ADH_Account_Stewarding__c asRecord : triggerNewLIST){
+                                                                   errorMAP.put(string.valueOf(nIndex), e.getMessage());
+                                                                   nIndex++;
+                                                               }// END for (ADH_Account_Stewarding__c asRecord : triggerNewLIST)
+                                                           }// END catch...
+                                                           return errorMap;
+                                                       }
+    
+    private static void copyDataToADHStewarded(List<ADH_Account_Stewarding__c> lstStewardingAccounts){
+        List<ADH_Account_Stewarded__c> adhStewardedList = new List<ADH_Account_Stewarded__c>();
+        
+        System.debug(' Copy Record Data ');
+        for(ADH_Account_Stewarding__c adh : lstStewardingAccounts){
+            ADH_Account_Stewarded__c adhStewarded = new ADH_Account_Stewarded__c();
+            System.debug(' Stewarding Record ' + adh);
+            adhStewarded.put('Submit_for_Review__c',false); // Added by Ravi to update the flag to false on insert new record or update existing record in Stewarded object.
+            for(String fName : FIELD_NAMES){
+                System.debug(' Field Name  ' + fName);
+                System.debug(' Field Value  ' + adh.get(fName));
+                adhStewarded.put(fName, adh.get(fName));
+            }
+            adhStewardedList.add(adhStewarded);
+            
+            System.debug(' Stewarded Record ' + adhStewarded);
+        }
+        if(adhStewardedList.size() > 0 ){
+            //Upsert adhStewardedList Account_ID__c;// use Database.upsert 4/1/2022 
+            List<Database.UpsertResult> srLIST =  Database.upsert(adhStewardedList, ADH_Account_Stewarded__c.Account_ID__c,false);
+            for(Database.UpsertResult sr : srLIST) {
+                if(!sr.isSuccess()) {
+                    Database.Error err = sr.getErrors()[0];
+                    String error = 'Cause: ' + err.getFields() + ' :: ' +
+                        'Error Message: ' + err.getMessage();
+                    System.debug(error);
+                }//END if(!sr.isSuccess())
+            } 
+        }
+        
+    }
+    
+}
